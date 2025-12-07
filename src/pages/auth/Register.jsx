@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
 
@@ -30,6 +30,21 @@ export default function Register() {
     alert("Registrasi berhasil! Cek email untuk verifikasi.");
     navigate("/");
   };
+
+  useEffect(() => {
+  const checkSession = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session?.user) {
+      navigate("/");
+    }
+  };
+
+  checkSession();
+}, []);
+
 
   return (
     <div className="min-h-screen bg-[#5e9bf5] flex items-center justify-center font-sans">

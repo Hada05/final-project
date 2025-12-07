@@ -1,18 +1,83 @@
 import React, { useEffect, useState } from "react";
 import { User, Pencil } from "lucide-react";
-import { useNavigate } from "react-router";
+import { data, useNavigate } from "react-router";
 import { supabase } from "../../lib/supabase";
+import imageCompression from "browser-image-compression";
 
 export default function ProfileAnggota() {
   const [userFullName, setUserFullName] = useState();
   const [userJabatan, setUserJabatan] = useState();
   const [userEmail, setUserEmail] = useState();
-
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    supabase.auth.signOut();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/login");
+  };
+
+  const handleUploadAvatar = async (e) => {
+    try {
+      setUploading(true);
+
+      let file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 1024 * 1024) {
+        file = await imageCompression(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 512,
+          useWebWorker: true,
+        });
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // Ambil avatar lama (PATH, bukan URL)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("avatar_path")
+        .eq("id", user.id)
+        .single();
+
+      // Hapus avatar lama
+      if (profile?.avatar_path) {
+        await supabase.storage.from("avatars").remove([profile.avatar_path]);
+      }
+
+      // Path baru
+      const newPath = `${user.id}-${Date.now()}.png`;
+
+      // Upload
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(newPath, file);
+
+      if (error) throw error;
+
+      // Generate public URL
+      const { data } = supabase.storage.from("avatars").getPublicUrl(newPath);
+
+      // Update DB
+      await supabase
+        .from("profiles")
+        .update({
+          avatar_path: newPath,
+          avatar_url: data.publicUrl,
+        })
+        .eq("id", user.id);
+
+      setAvatarUrl(data.publicUrl);
+    } catch (err) {
+      console.error(err);
+      alert("Upload avatar gagal 😭");
+    } finally {
+      setUploading(false);
+      e.target.value = null;
+    }
   };
 
   useEffect(() => {
@@ -26,28 +91,52 @@ export default function ProfileAnggota() {
       setUserFullName(data.full_name);
       setUserJabatan(data.role);
       setUserEmail(data.email);
+      setAvatarUrl(data.avatar_url);
 
       console.log(error);
     };
     fetchUserProfile();
-
-    console.log;
   }, []);
+
+  console.log("AVATAR URL:", avatarUrl);
   return (
     <main className="flex flex-col gap-8 p-8 bg-blue-50/30 font-sans">
       <div className="bg-background rounded-xl shadow-sm border border-slate-100 overflow-hidden">
         {/* Header */}
         <div className="p-8 border-b border-dashed border-slate-300 flex items-center">
           {/* Avatar */}
-          <div className="flex flex-col items-center mr-10">
-            <div className="relative">
-              <div className="w-24 h-24 bg-foreground rounded-full flex items-center justify-center text-background border-4 border-background shadow-md">
-                <User size={56} />
-              </div>
-              <div className="absolute bottom-0 right-0 bg-background p-1.5 rounded-full border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50">
-                <Pencil size={14} className="text-foreground" />
-              </div>
+          <div className="relative w-24 h-24">
+            {/* Avatar circle */}
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-background shadow-md bg-slate-200 flex items-center justify-center">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={56} className="text-slate-500" />
+              )}
             </div>
+
+            {/* Pencil button */}
+            <div
+              onClick={() =>
+                !uploading && document.getElementById("avatar-upload").click()
+              }
+              className="absolute -bottom-1 -right-1 bg-background p-1.5 rounded-full border border-slate-200 shadow-sm cursor-pointer hover:bg-slate-50"
+            >
+              <Pencil size={14} className="text-foreground" />
+            </div>
+
+            {/* Hidden input */}
+            <input
+              type="file"
+              id="avatar-upload"
+              accept="image/*"
+              hidden
+              onChange={handleUploadAvatar}
+            />
           </div>
 
           {/* Title */}
