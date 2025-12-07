@@ -12,6 +12,8 @@ import AnggotaLayout from "./layouts/AnggotaLayout";
 import ProfileAnggota from "./pages/user/ProfileAnggota";
 import DetailPengajuan from "./pages/user/DetailPengajuan";
 import PengajuanBaru from "./pages/user/PengajuanBaru";
+import DaftarUsers from "./pages/admin/DaftarUsers";
+import UserDetail from "./pages/admin/UserDetail";
 
 function App() {
   return (
@@ -28,6 +30,8 @@ function App() {
           <Route path="pengajuan/:id" element={<ReviewPengajuan />} />
           <Route path="laporan" element={<LaporanKeuangan />} />
           <Route path="profile" element={<ProfileAdmin />} />
+          <Route path="users" element={<DaftarUsers />} />
+          <Route path="users/:id" element={<UserDetail />} />
         </Route>
 
         {/* Anggota */}

@@ -6,7 +6,9 @@ import {
   BookOpen,
   User,
   LogOut,
+  Users2,
 } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 
 export default function SidebarAdmin() {
   const navigate = useNavigate();
@@ -19,12 +21,12 @@ export default function SidebarAdmin() {
     { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { key: "pengajuan", label: "Daftar Pengajuan", icon: FileText },
     { key: "laporan", label: "Laporan Keuangan", icon: BookOpen },
+    { key: "users", label: "Daftar Users", icon: Users2 },
     { key: "profile", label: "Profile", icon: User },
   ];
 
-  const handleLogout = () => {
-    // kalau kamu punya supabase.auth.signOut tambahin di sini ya
-    // await supabase.auth.signOut();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/login");
   };
 

@@ -2,6 +2,7 @@ import { useNavigate, useParams } from "react-router";
 import { useState, useEffect } from "react";
 import { Image } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import UserCard from "../../components/user/UserCard";
 
 export default function DetailPengajuan() {
   const navigate = useNavigate();
@@ -16,6 +17,8 @@ export default function DetailPengajuan() {
     reviewer_id: "",
   });
   const [imageUrl, setImageUrl] = useState(null);
+  const [pengaju, setPengaju] = useState(null);
+  const [reviewer, setReviewer] = useState(null);
 
   useEffect(() => {
     async function fetchDetail() {
@@ -48,7 +51,29 @@ export default function DetailPengajuan() {
 
           if (!urlError) setImageUrl(urlData.signedUrl);
         }
+        // fetch pengaju
+        if (data.user_id) {
+          const { data: pengajuData } = await supabase
+            .from("profiles")
+            .select("full_name, email, avatar_url, role")
+            .eq("id", data.user_id)
+            .single();
+
+          if (pengajuData) setPengaju(pengajuData);
+        }
+
+        // fetch reviewer (kalau sudah ada review)
+        if (existingReview?.reviewer_id) {
+          const { data: reviewerData } = await supabase
+            .from("profiles")
+            .select("full_name, email, avatar_url, role")
+            .eq("id", existingReview.reviewer_id)
+            .single();
+
+          if (reviewerData) setReviewer(reviewerData);
+        }
       }
+
       setLoading(false);
     }
 
@@ -97,6 +122,12 @@ export default function DetailPengajuan() {
             className="max-w-xs rounded-xl shadow"
           />
         </div>
+      </div>
+
+      {/* USER INFO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <UserCard title="Pengaju" user={pengaju} />
+        <UserCard title="Reviewer" user={reviewer} />
       </div>
 
       {/* REVIEW BOX */}

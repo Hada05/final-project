@@ -13,7 +13,7 @@ export default function RequestCard({ data }) {
   const color = statusColors[status] || "bg-gray-300";
 
   return (
-    <div className="bg-white rounded-xl flex overflow-hidden shadow-sm border border-foreground hover:shadow-md transition-shadow h-16 items-center cursor-pointer">
+    <div className="bg-white rounded-xl flex overflow-hidden shadow-sm border border-foreground hover:shadow-md transition-shadow h-16 items-center">
       {/* Left strip color */}
       <div className={`${color} w-3 h-full mr-4`} />
 

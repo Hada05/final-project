@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
+import UserCard from "../../components/user/UserCard";
 
 export default function ReviewPengajuan() {
   const navigate = useNavigate();
@@ -15,14 +16,38 @@ export default function ReviewPengajuan() {
     reviewer_id: "",
   });
   const [imageUrl, setImageUrl] = useState(null);
+  const [pengaju, setPengaju] = useState(null);
+  const [reviewer, setReviewer] = useState(null);
+
+  async function getCurrentUserProfile() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, avatar_url, role")
+      .eq("id", user.id)
+      .single();
+
+    return profile;
+  }
 
   async function handleSubmit() {
     if (!data) return;
 
+    const reviewerProfile = await getCurrentUserProfile();
+    if (!reviewerProfile) {
+      alert("Reviewer tidak valid");
+      return;
+    }
+
     const payload = {
       reimbursement_id: data.id,
       reason: reviewData.reason,
-      reviewer_id: "b740c66e-17d2-4a99-9194-9e9cd52fe671", // ganti sesuai auth
+      reviewer_id: reviewerProfile.id,
     };
 
     // cek apakah review sudah ada
@@ -92,8 +117,20 @@ export default function ReviewPengajuan() {
           if (!urlError) setImageUrl(urlData.signedUrl);
           else console.error("Signed URL error:", urlError);
         }
-      }
 
+        // fetch pengaju
+        if (data.user_id) {
+          const { data: pengajuData } = await supabase
+            .from("profiles")
+            .select("full_name, email, avatar_url, role")
+            .eq("id", data.user_id)
+            .single();
+
+          if (pengajuData) setPengaju(pengajuData);
+        }
+      }
+      const reviewerProfile = await getCurrentUserProfile();
+      if (reviewerProfile) setReviewer(reviewerProfile);
       setLoading(false);
     }
 
@@ -142,6 +179,12 @@ export default function ReviewPengajuan() {
             className="max-w-xs rounded-xl shadow"
           />
         </div>
+      </div>
+
+      {/* USER INFO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <UserCard title="Pengaju" user={pengaju} />
+        <UserCard title="Reviewer" user={reviewer} />
       </div>
 
       {/* REVIEW BOX */}
